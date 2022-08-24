@@ -226,3 +226,11 @@ def process_batch(jobs_batch, out_queue, model_related):
     decoded_samples_ddim = torch.clamp(
         (decoded_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0
     )
+
+    for i, sample in enumerate(decoded_samples_ddim):
+        sample = 255.0 * rearrange(sample.cpu().numpy(), "c h w -> h w c")
+        jid = jobs_batch[i]["id"]
+        Image.fromarray(sample.astype(np.uint8)).save(
+            os.path.join("results", f"{jid}.png")
+        )
+        grid_count += 1
