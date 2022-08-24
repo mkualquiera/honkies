@@ -17,18 +17,21 @@ IN_QUEUES = None
 async def enqueue():
     data = await request.get_json()
 
-    if 'id' not in data:
-        return "Missing id", 400
-    
-    if 'parameters' not in data:
-        return "Missing parameters", 400
+    for job in data:
 
-    if 'uid' not in data:
-        return "Missing uid", 400
+        if 'id' not in job:
+            return "Missing id", 400
 
-    data["status"] = "pending"
+        if 'parameters' not in job:
+            return "Missing parameters", 400
 
-    GLOBAL_QUEUE.append(data)
+        if 'uid' not in job:
+            return "Missing uid", 400
+
+        data["status"] = "pending"
+
+        GLOBAL_QUEUE.append(data)
+
     return "OK", 200
 
 @app.route("/v1/api/jobs")
@@ -113,6 +116,7 @@ if __name__ == "__main__":
 
     for i in range(num_devices):
         p = multiprocessing.Process(target=worker, args=(OUT_QUEUES[i],IN_QUEUES[i]))
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(i)
         p.start()
 
     # get default loop
