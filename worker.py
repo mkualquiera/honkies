@@ -233,4 +233,11 @@ def process_batch(jobs_batch, out_queue, model_related):
         Image.fromarray(sample.astype(np.uint8)).save(
             os.path.join("results", f"{jid}.png")
         )
-        grid_count += 1
+
+        message = {
+            "id": jid,
+            "status": "done",
+            "progress": 1.0,
+        }
+
+        out_queue.put(message)
