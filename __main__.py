@@ -19,9 +19,17 @@ GLOBAL_QUEUE = []
 OUT_QUEUES = None
 IN_QUEUES = None
 
+STARTED_LOOP = False
+
 
 @app.route("/v1/api/enqueue")
 async def enqueue():
+    global STARTED_LOOP
+
+    if not STARTED_LOOP:
+        asyncio.create_task(looper())
+        STARTED_LOOP = True
+
     args = request.args
 
     job_data = args["params"]
@@ -143,11 +151,6 @@ if __name__ == "__main__":
         p = multiprocessing.Process(target=worker, args=(OUT_QUEUES[i], IN_QUEUES[i]))
         os.environ["CUDA_VISIBLE_DEVICES"] = str(i)
         p.start()
-
-    # get default loop
-    loop = asyncio.get_event_loop()
-    # run the loop
-    loop.create_task(looper())
 
     app.run(host="0.0.0.0", port=42000, debug=True)
 
