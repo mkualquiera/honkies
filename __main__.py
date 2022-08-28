@@ -2,6 +2,7 @@ import torch.multiprocessing as multiprocessing
 from quart import Quart, request, jsonify, send_file
 from worker import worker
 import torch
+import json
 
 try:
     multiprocessing.set_start_method("spawn")
@@ -21,7 +22,11 @@ IN_QUEUES = None
 
 @app.route("/v1/api/enqueue")
 async def enqueue():
-    data = await request.get_json(force=True)
+    data = await request.data
+
+    print(data)
+
+    data = json.loads(data)
 
     for job in data:
 
