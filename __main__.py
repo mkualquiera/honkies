@@ -26,8 +26,6 @@ async def enqueue():
 
     print(data)
 
-    data = json.loads(data)
-
     for job in data:
 
         if "id" not in job:
