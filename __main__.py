@@ -22,7 +22,17 @@ IN_QUEUES = None
 STARTED_LOOP = False
 
 
-@app.route("/v1/api/enqueue")
+@app.route("/api/v1/status")
+async def status():
+    return jsonify(
+        {
+            "status": "ok",
+            "workers": len(IN_QUEUES),
+        }
+    )
+
+
+@app.route("/api/v1/enqueue")
 async def enqueue():
     global STARTED_LOOP
 
@@ -47,8 +57,8 @@ async def enqueue():
         if "parameters" not in job:
             return "Missing parameters", 400
 
-        if "uid" not in job:
-            return "Missing uid", 400
+        if "workers" not in job:
+            return "Missing worker", 400
 
         job["status"] = "pending"
 
@@ -63,6 +73,7 @@ async def list():
     light_results = [
         {
             "id": job["id"],
+            "worker": job["worker"],
             "status": job["status"],
         }
         for job in GLOBAL_QUEUE
@@ -92,7 +103,12 @@ async def get_result(job_id):
     if not os.path.exists(filename):
         return "Not found", 404
 
-    return send_file(filename)
+    resp = send_file(filename)
+
+    # delete the file
+    os.remove(filename)
+
+    return resp
 
 
 async def looper():
@@ -109,18 +125,13 @@ async def looper():
         print(f"{num_pending_jobs} pending jobs")
 
         while num_pending_jobs > 0:
-            # get unique uids
-            uids = [job["uid"] for job in pending_jobs]
-
-            # get a random uid
-            uid = random.choice(uids)
 
             # get a job with that uid
-            job = [job for job in pending_jobs if job["uid"] == uid][0]
+            job = pending_jobs.pop()
             job["status"] = "scheduled"
 
-            # send it to a worker
-            worker_queue = random.choice(OUT_QUEUES)
+            # send it to the worker
+            worker_queue = OUT_QUEUES[job["worker"]]
             worker_queue.put(job)
             print(f"Scheduled {job['id']}")
 
