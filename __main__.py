@@ -137,7 +137,7 @@ if __name__ == "__main__":
     # get default loop
     loop = asyncio.get_event_loop()
     # run the loop
-    loop.run_until_complete(looper())
+    loop.create_task(looper())
 
     app.run(host="0.0.0.0", port=42000, debug=True)
 
