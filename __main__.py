@@ -1,4 +1,4 @@
-import multiprocessing
+import torch.multiprocessing
 from quart import Quart, request, jsonify, send_file
 from worker import worker
 import torch
