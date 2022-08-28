@@ -91,7 +91,7 @@ async def looper():
     print("Starting loop...")
 
     while True:
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(1)
 
         # Schedule new jobs
         pending_jobs = [job for job in GLOBAL_QUEUE if job["status"] == "pending"]
@@ -111,6 +111,7 @@ async def looper():
             # send it to a worker
             worker_queue = random.choice(OUT_QUEUES)
             worker_queue.put(job)
+            print(f"Scheduled {job['id']}")
 
             num_pending_jobs -= 1
 
