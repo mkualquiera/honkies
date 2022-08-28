@@ -22,7 +22,11 @@ IN_QUEUES = None
 
 @app.route("/v1/api/enqueue")
 async def enqueue():
-    data = await request.json
+    args = request.args
+
+    job_data = args["params"]
+
+    data = json.loads(job_data)
 
     print(data)
 
