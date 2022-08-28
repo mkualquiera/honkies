@@ -97,59 +97,62 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
 
 def process_batch(jobs_batch, out_queue, model_related):
 
-    prompts = [job["parameters"]["prompt"] for job in jobs_batch]
-    seeds = [job["parameters"]["seed"] for job in jobs_batch]
+    with torch.no_grad():
+        with model_related.model.ema_scope():
+            with torch.cuda.amp.autocast():
+                prompts = [job["parameters"]["prompt"] for job in jobs_batch]
+                seeds = [job["parameters"]["seed"] for job in jobs_batch]
 
-    batch_size = len(prompts)
+                batch_size = len(prompts)
 
-    width, height = (
-        jobs_batch[0]["parameters"]["width"],
-        jobs_batch[0]["parameters"]["height"],
-    )
+                width, height = (
+                    jobs_batch[0]["parameters"]["width"],
+                    jobs_batch[0]["parameters"]["height"],
+                )
 
-    ddim_steps = jobs_batch[0]["parameters"]["ddim_steps"]
-    scale = jobs_batch[0]["parameters"]["scale"]
+                ddim_steps = jobs_batch[0]["parameters"]["ddim_steps"]
+                scale = jobs_batch[0]["parameters"]["scale"]
 
-    uc = model_related.model.get_learned_conditioning(batch_size * [""])
-    c = model_related.model.get_learned_conditioning(prompts)
-    sigmas = model_related.model_wrap.get_sigmas(ddim_steps)
-    shape = [4, height // 8, width // 8]
+                uc = model_related.model.get_learned_conditioning(batch_size * [""])
+                c = model_related.model.get_learned_conditioning(prompts)
+                sigmas = model_related.model_wrap.get_sigmas(ddim_steps)
+                shape = [4, height // 8, width // 8]
 
-    x = None
-    for seed in seeds:
-        seed_everything(seed)
-        this_x = torch.randn([1, *shape], device="cuda")
-        this_x = this_x * sigmas[0]
-        x = this_x if x is None else torch.cat([x, this_x], dim=0)
+                x = None
+                for seed in seeds:
+                    seed_everything(seed)
+                    this_x = torch.randn([1, *shape], device="cuda")
+                    this_x = this_x * sigmas[0]
+                    x = this_x if x is None else torch.cat([x, this_x], dim=0)
 
-    x = x.half()
+                model_wrap_cfg = CFGDenoiser(model_related.model_wrap)
+                extra_args = {"cond": c, "uncond": uc, "cond_scale": scale}
 
-    model_wrap_cfg = CFGDenoiser(model_related.model_wrap)
-    extra_args = {"cond": c, "uncond": uc, "cond_scale": scale}
+                samples_ddim = K.sampling.sample_lms(
+                    model_wrap_cfg,
+                    x,
+                    sigmas,
+                    extra_args=extra_args,
+                )
 
-    samples_ddim = K.sampling.sample_lms(
-        model_wrap_cfg,
-        x,
-        sigmas,
-        extra_args=extra_args,
-    )
+                decoded_samples_ddim = model_related.model.decode_first_stage(
+                    samples_ddim
+                )
+                decoded_samples_ddim = torch.clamp(
+                    (decoded_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0
+                )
 
-    decoded_samples_ddim = model_related.model.decode_first_stage(samples_ddim)
-    decoded_samples_ddim = torch.clamp(
-        (decoded_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0
-    )
+                for i, sample in enumerate(decoded_samples_ddim):
+                    sample = 255.0 * rearrange(sample.cpu().numpy(), "c h w -> h w c")
+                    jid = jobs_batch[i]["id"]
+                    Image.fromarray(sample.astype(np.uint8)).save(
+                        os.path.join("results", f"{jid}.png")
+                    )
 
-    for i, sample in enumerate(decoded_samples_ddim):
-        sample = 255.0 * rearrange(sample.cpu().numpy(), "c h w -> h w c")
-        jid = jobs_batch[i]["id"]
-        Image.fromarray(sample.astype(np.uint8)).save(
-            os.path.join("results", f"{jid}.png")
-        )
+                    message = {
+                        "id": jid,
+                        "status": "done",
+                        "progress": 1.0,
+                    }
 
-        message = {
-            "id": jid,
-            "status": "done",
-            "progress": 1.0,
-        }
-
-        out_queue.put(message)
+                    out_queue.put(message)
