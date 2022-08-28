@@ -134,7 +134,7 @@ if __name__ == "__main__":
     # run the loop
     loop.run_until_complete(looper())
 
-    app.run(host="0.0.0.0", port=42000)
+    app.run(host="0.0.0.0", port=42000, debug=True)
 
     while True:
         pass
