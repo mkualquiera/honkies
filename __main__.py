@@ -20,7 +20,7 @@ OUT_QUEUES = None
 IN_QUEUES = None
 
 
-@app.route("/v1/api/enqueue", methods=["POST"])
+@app.route("/v1/api/enqueue")
 async def enqueue():
     data = await request.json
 
