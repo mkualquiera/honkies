@@ -17,9 +17,6 @@ from ldm.util import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
 
-ckpt = "/weights/sd.ckpt"
-config = "/workspace/k-diffusion/v1-inference.yaml"
-
 
 def chunk(it, size):
     it = iter(it)
@@ -59,10 +56,6 @@ class CFGDenoiser(nn.Module):
         return uncond + (cond - uncond) * cond_scale
 
 
-config = OmegaConf.load(f"{config}")
-model = load_model_from_config(config, f"{ckpt}", device="cuda")
-
-
 def fits_in_batch(current_jobs, new_job):
     if len(current_jobs) == 0:
         return True
@@ -72,8 +65,8 @@ def fits_in_batch(current_jobs, new_job):
 
 def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
 
-    config = OmegaConf.load(f"{config}")
-    model = load_model_from_config(config, f"{ckpt}")
+    config = OmegaConf.load("/workspace/k-diffusion/v1-inference.yaml")
+    model = load_model_from_config(config, "/weights/sd.ckpt")
     model_wrap = K.external.CompVisDenoiser(model)
 
     model_related = SimpleNamespace(
