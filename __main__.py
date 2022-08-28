@@ -21,7 +21,7 @@ IN_QUEUES = None
 
 @app.route("/v1/api/enqueue")
 async def enqueue():
-    data = await request.get_json()
+    data = await request.get_json(force=True)
 
     for job in data:
 
