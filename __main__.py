@@ -148,6 +148,10 @@ if __name__ == "__main__":
     OUT_QUEUES = [multiprocessing.Queue() for _ in range(num_devices)]
     IN_QUEUES = [multiprocessing.Queue() for _ in range(num_devices)]
 
+    # create results directory if it doesn't exist
+    if not os.path.exists("./results"):
+        os.makedirs("./results")
+
     for i in range(num_devices):
         p = multiprocessing.Process(target=worker, args=(OUT_QUEUES[i], IN_QUEUES[i]))
         os.environ["CUDA_VISIBLE_DEVICES"] = str(i)
