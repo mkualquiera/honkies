@@ -1,10 +1,10 @@
-import torch.multiprocessing
+import torch.multiprocessing as multiprocessing
 from quart import Quart, request, jsonify, send_file
 from worker import worker
 import torch
 
 try:
-    set_start_method("spawn")
+    multiprocessing.set_start_method("spawn")
 except RuntimeError:
     pass
 import os
