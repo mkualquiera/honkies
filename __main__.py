@@ -2,6 +2,11 @@ import torch.multiprocessing
 from quart import Quart, request, jsonify, send_file
 from worker import worker
 import torch
+
+try:
+    set_start_method("spawn")
+except RuntimeError:
+    pass
 import os
 import asyncio
 import random
