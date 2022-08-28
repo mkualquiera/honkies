@@ -22,7 +22,7 @@ IN_QUEUES = None
 
 @app.route("/v1/api/enqueue")
 async def enqueue():
-    data = await request.data
+    data = await request.get_json()
 
     print(data)
 
