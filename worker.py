@@ -119,7 +119,7 @@ def process_batch(jobs_batch, out_queue, model_related):
     for seed in seeds:
         seed_everything(seed)
         this_x = torch.randn([1, *shape], device="cuda")
-        this_x = x * sigmas[0]
+        this_x = this_x * sigmas[0]
         x = this_x if x is None else torch.cat([x, this_x], dim=0)
 
     model_wrap_cfg = CFGDenoiser(model_related.model_wrap)
