@@ -84,13 +84,21 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
 
     current_jobs_batch = []
 
+    print("Worker started")
+
     while True:
         job = in_queue.get()
+
+        prompt = job["parameters"]["prompt"]
+
+        print(f"Found job: {prompt}")
 
         if fits_in_batch(current_jobs_batch, job):
             current_jobs_batch.append(job)
         else:
+            print("Processing batch...")
             process_batch(current_jobs_batch, out_queue, model_related)
+            print("Done")
             current_jobs_batch = []
 
 
