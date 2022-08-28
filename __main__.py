@@ -27,6 +27,7 @@ async def enqueue():
     global STARTED_LOOP
 
     if not STARTED_LOOP:
+        print("Starting loop...")
         asyncio.create_task(looper())
         STARTED_LOOP = True
 
