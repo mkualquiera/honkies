@@ -41,9 +41,9 @@ async def enqueue():
         if "uid" not in job:
             return "Missing uid", 400
 
-        data["status"] = "pending"
+        job["status"] = "pending"
 
-        GLOBAL_QUEUE.append(data)
+        GLOBAL_QUEUE.append(job)
 
     return "OK", 200
 
