@@ -67,7 +67,7 @@ async def enqueue():
     return "OK", 200
 
 
-@app.route("/v1/api/jobs")
+@app.route("/api/v1/jobs")
 async def list():
 
     light_results = [
@@ -82,7 +82,7 @@ async def list():
     return jsonify(light_results)
 
 
-@app.route("/v1/api/jobs/<job_id>")
+@app.route("/api/v1/jobs/<job_id>")
 async def get(job_id):
 
     for job in GLOBAL_QUEUE:
@@ -95,7 +95,7 @@ async def get(job_id):
     return "Not found", 404
 
 
-@app.route("/v1/api/jobs/<job_id>/image")
+@app.route("/api/v1/jobs/<job_id>/image")
 async def get_result(job_id):
 
     filename = "./results/{}.png".format(job_id)
