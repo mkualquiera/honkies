@@ -106,7 +106,7 @@ async def get_result(job_id):
     if not os.path.exists(filename):
         return "Not found", 404
 
-    resp = send_file(filename)
+    resp = await send_file(filename)
 
     # delete the file
     # os.remove(filename)
