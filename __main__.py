@@ -109,7 +109,7 @@ async def get_result(job_id):
     resp = send_file(filename)
 
     # delete the file
-    os.remove(filename)
+    # os.remove(filename)
 
     return resp
 
