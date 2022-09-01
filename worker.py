@@ -65,8 +65,11 @@ def fits_in_batch(current_jobs, new_job):
 
 def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
 
+    print("Loading config")
     config = OmegaConf.load("/workspace/k-diffusion/v1-inference.yaml")
+    print("Loading model")
     model = load_model_from_config(config, "/weights/sd.ckpt")
+    print("Loading model wrap")
     model_wrap = K.external.CompVisDenoiser(model)
 
     model_related = SimpleNamespace(
