@@ -52,12 +52,15 @@ async def enqueue():
     for job in data:
 
         if "id" not in job:
+            print("No id")
             return "Missing id", 400
 
         if "parameters" not in job:
+            print("No parameters")
             return "Missing parameters", 400
 
         if "worker" not in job:
+            print("No worker")
             return "Missing worker", 400
 
         job["status"] = "pending"
