@@ -154,7 +154,7 @@ def process_batch(jobs_batch, out_queue, model_related):
 
                     message = {
                         "id": jid,
-                        "status": "done",
+                        "status": "complete",
                         "progress": 1.0,
                     }
 
