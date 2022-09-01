@@ -57,7 +57,7 @@ async def enqueue():
         if "parameters" not in job:
             return "Missing parameters", 400
 
-        if "workers" not in job:
+        if "worker" not in job:
             return "Missing worker", 400
 
         job["status"] = "pending"
