@@ -82,6 +82,10 @@ async def list():
         for job in GLOBAL_QUEUE
     ]
 
+    for job in GLOBAL_QUEUE:
+        if job["status"] == "complete":
+            GLOBAL_QUEUE.remove(job)
+
     return jsonify(light_results)
 
 
