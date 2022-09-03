@@ -1,6 +1,7 @@
 from math import remainder
 import multiprocessing
 import argparse, os, sys, glob
+from time import time
 from types import SimpleNamespace
 import torch
 from torch import nn
@@ -113,7 +114,7 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
             current_jobs_batch = remainder
         else:
             print("Sleeping")
-            os.sleep(1)
+            time.sleep(1)
 
 
 def process_batch(jobs_batch, out_queue, model_related):
