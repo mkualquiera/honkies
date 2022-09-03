@@ -86,7 +86,7 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
 
     while True:
 
-        last_fits = False
+        last_fits = True
 
         while not in_queue.empty():
 
@@ -100,6 +100,9 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
 
             current_jobs_batch.append(job)
 
+            if not last_fits:
+                break
+
         if len(current_jobs_batch) > 0:
 
             remainder = []
@@ -112,6 +115,7 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
             process_batch(current_jobs_batch, out_queue, model_related)
             print("Done")
             current_jobs_batch = remainder
+            last_fits = False
         else:
             print("Sleeping")
             time.sleep(1)
@@ -128,12 +132,12 @@ def process_batch(jobs_batch, out_queue, model_related):
                 batch_size = len(prompts)
 
                 width, height = (
-                    jobs_batch[0]["parameters"]["width"],
-                    jobs_batch[0]["parameters"]["height"],
+                    int(jobs_batch[0]["parameters"]["width"]),
+                    int(jobs_batch[0]["parameters"]["height"]),
                 )
 
-                ddim_steps = jobs_batch[0]["parameters"]["ddim_steps"]
-                scale = jobs_batch[0]["parameters"]["scale"]
+                ddim_steps = int(jobs_batch[0]["parameters"]["ddim_steps"])
+                scale = float(jobs_batch[0]["parameters"]["scale"])
 
                 uc = model_related.model.get_learned_conditioning(batch_size * [""])
                 c = model_related.model.get_learned_conditioning(prompts)
