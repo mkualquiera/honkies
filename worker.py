@@ -1,7 +1,7 @@
 from math import remainder
 import multiprocessing
 import argparse, os, sys, glob
-from time
+import time
 from types import SimpleNamespace
 import torch
 from torch import nn
