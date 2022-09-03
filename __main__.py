@@ -129,9 +129,9 @@ async def looper():
         pending_jobs = [job for job in GLOBAL_QUEUE if job["status"] == "pending"]
         num_pending_jobs = len(pending_jobs)
 
-        print(f"{num_pending_jobs} pending jobs")
-
         while num_pending_jobs > 0:
+
+            print(f"{num_pending_jobs} pending jobs")
 
             # get a job with that uid
             job = pending_jobs.pop()

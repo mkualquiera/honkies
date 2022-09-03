@@ -1,3 +1,4 @@
+from math import remainder
 import multiprocessing
 import argparse, os, sys, glob
 from types import SimpleNamespace
@@ -83,19 +84,36 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
     print("Worker started")
 
     while True:
-        job = in_queue.get()
 
-        prompt = job["parameters"]["prompt"]
+        last_fits = False
 
-        print(f"Found job: {prompt}")
+        while not in_queue.empty():
 
-        if fits_in_batch(current_jobs_batch, job):
+            job = in_queue.queue()
+
+            prompt = job["parameters"]["prompt"]
+
+            print(f"Found job: {prompt}")
+
+            last_fits = fits_in_batch(current_jobs_batch, job)
+
             current_jobs_batch.append(job)
-        else:
+
+        if len(current_jobs_batch) > 0:
+
+            remainder = []
+
+            if not last_fits:
+                remainder = [current_jobs_batch[-1]]
+                current_jobs_batch = current_jobs_batch[:-1]
+
             print("Processing batch...")
             process_batch(current_jobs_batch, out_queue, model_related)
             print("Done")
-            current_jobs_batch = []
+            current_jobs_batch = remainder
+        else:
+            print("Sleeping")
+            os.sleep(1)
 
 
 def process_batch(jobs_batch, out_queue, model_related):
