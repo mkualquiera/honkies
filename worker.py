@@ -89,7 +89,7 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
 
         while not in_queue.empty():
 
-            job = in_queue.queue()
+            job = in_queue.get()
 
             prompt = job["parameters"]["prompt"]
 
