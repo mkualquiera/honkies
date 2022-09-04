@@ -59,7 +59,7 @@ class CFGDenoiser(nn.Module):
 
 
 def fits_in_batch(current_jobs, new_job):
-    if len(current_jobs) > 2:
+    if len(current_jobs) < 2:
         return True
 
     return False
