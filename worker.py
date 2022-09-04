@@ -59,7 +59,7 @@ class CFGDenoiser(nn.Module):
 
 
 def fits_in_batch(current_jobs, new_job):
-    if len(current_jobs) == 0:
+    if len(current_jobs) > 2:
         return True
 
     return False
@@ -167,6 +167,10 @@ def process_batch(jobs_batch, out_queue, model_related):
                 decoded_samples_ddim = torch.clamp(
                     (decoded_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0
                 )
+
+                print("!!!!!!!!!!!!!!!!!!!!!")
+                print(decoded_samples_ddim.shape)
+                print("!!!!!!!!!!!!!!!!!!!!!")
 
                 for i, sample in enumerate(decoded_samples_ddim):
                     sample = 255.0 * rearrange(sample.cpu().numpy(), "c h w -> h w c")
