@@ -15,6 +15,7 @@ import random
 app = Quart(__name__)
 
 GLOBAL_QUEUE = []
+WORKER_PROCESSES = []
 
 OUT_QUEUES = None
 IN_QUEUES = None
@@ -159,6 +160,29 @@ async def looper():
                         break
 
 
+async def worker_wathdog():
+    while True:
+        await asyncio.sleep(1)
+
+        for i, worker in enumerate(WORKER_PROCESSES):
+            if not worker.is_alive():
+                print("Worker died, flagging its jobs as failed...")
+
+                for job in GLOBAL_QUEUE:
+                    if job["worker"] == i:
+                        job["status"] = "failed"
+                        job["progress"] = 0
+
+                print("Restarting worker...")
+
+                p = multiprocessing.Process(
+                    target=worker, args=(OUT_QUEUES[i], IN_QUEUES[i])
+                )
+                os.environ["CUDA_VISIBLE_DEVICES"] = str(i)
+                p.start()
+                WORKER_PROCESSES[i] = p
+
+
 if __name__ == "__main__":
 
     num_devices = torch.cuda.device_count()
@@ -174,6 +198,7 @@ if __name__ == "__main__":
         p = multiprocessing.Process(target=worker, args=(OUT_QUEUES[i], IN_QUEUES[i]))
         os.environ["CUDA_VISIBLE_DEVICES"] = str(i)
         p.start()
+        WORKER_PROCESSES.append(p)
 
     app.run(host="0.0.0.0", port=42000, debug=True)
 
