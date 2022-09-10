@@ -13,16 +13,6 @@ import os
 import asyncio
 import random
 
-app = Quart(__name__)
-
-GLOBAL_QUEUE = []
-WORKER_PROCESSES = []
-
-OUT_QUEUES = None
-IN_QUEUES = None
-
-STARTED_LOOP = False
-
 
 @app.route("/api/v1/status")
 async def status():
@@ -162,6 +152,18 @@ async def looper():
                         break
 
 
+def rebuild_worker(i):
+    WORKER_PROCESSES[i] = None
+
+    OUT_QUEUES[i] = multiprocessing.Queue()
+    IN_QUEUES[i] = multiprocessing.Queue
+
+    p = multiprocessing.Process(target=worker, args=(OUT_QUEUES[i], IN_QUEUES[i]))
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(i)
+    p.start()
+    WORKER_PROCESSES[i] = p
+
+
 async def worker_wathdog():
     while True:
         await asyncio.sleep(1)
@@ -176,21 +178,20 @@ async def worker_wathdog():
                         job["progress"] = 0
 
                 print("Restarting worker...")
-
-                WORKER_PROCESSES[i] = None
-
-                OUT_QUEUES[i] = multiprocessing.Queue()
-                IN_QUEUES[i] = multiprocessing.Queue()
-
-                p = multiprocessing.Process(
-                    target=worker, args=(OUT_QUEUES[i], IN_QUEUES[i])
-                )
-                os.environ["CUDA_VISIBLE_DEVICES"] = str(i)
-                p.start()
-                WORKER_PROCESSES[i] = p
+                rebuild_worker(i)
 
 
 if __name__ == "__main__":
+
+    app = Quart(__name__)
+
+    GLOBAL_QUEUE = []
+    WORKER_PROCESSES = []
+
+    OUT_QUEUES = None
+    IN_QUEUES = None
+
+    STARTED_LOOP = False
 
     num_devices = torch.cuda.device_count()
 
