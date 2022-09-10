@@ -13,6 +13,8 @@ import os
 import asyncio
 import random
 
+app = Quart(__name__)
+
 
 @app.route("/api/v1/status")
 async def status():
@@ -182,8 +184,6 @@ async def worker_wathdog():
 
 
 if __name__ == "__main__":
-
-    app = Quart(__name__)
 
     GLOBAL_QUEUE = []
     WORKER_PROCESSES = []
