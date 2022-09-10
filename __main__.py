@@ -1,3 +1,4 @@
+from pickle import NONE
 import torch.multiprocessing as multiprocessing
 from quart import Quart, request, jsonify, send_file
 from worker import worker
@@ -175,6 +176,8 @@ async def worker_wathdog():
                         job["progress"] = 0
 
                 print("Restarting worker...")
+
+                WORKER_PROCESSES[i] = None
 
                 OUT_QUEUES[i] = multiprocessing.Queue()
                 IN_QUEUES[i] = multiprocessing.Queue()
