@@ -40,6 +40,7 @@ async def enqueue():
     if not STARTED_LOOP:
         print("Starting loop...")
         asyncio.create_task(looper())
+        asyncio.create_task(worker_wathdog())
         STARTED_LOOP = True
 
     args = request.args
