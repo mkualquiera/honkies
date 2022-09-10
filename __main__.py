@@ -158,7 +158,7 @@ def rebuild_worker(i):
     WORKER_PROCESSES[i] = None
 
     OUT_QUEUES[i] = multiprocessing.Queue()
-    IN_QUEUES[i] = multiprocessing.Queue
+    IN_QUEUES[i] = multiprocessing.Queue()
 
     p = multiprocessing.Process(target=worker, args=(OUT_QUEUES[i], IN_QUEUES[i]))
     os.environ["CUDA_VISIBLE_DEVICES"] = str(i)
