@@ -92,7 +92,7 @@ def fits_in_batch(current_jobs, new_job):
         if can_steps != new_steps:
             return False
 
-    hypothetical_batch = current_jobs + [new_job, new_job, new_job]
+    hypothetical_batch = current_jobs + [new_job]
 
     mem = batch_memory(hypothetical_batch)
 
@@ -114,10 +114,13 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
     print("Loading model wrap")
     model_wrap = K.external.CompVisDenoiser(model)
 
+    model_wrap_cfg = CFGDenoiser(model_wrap)
+
     model_related = SimpleNamespace(
         model=model,
         config=config,
         model_wrap=model_wrap,
+        model_wrap_cfg=model_wrap_cfg,
     )
 
     current_jobs_batch = []
@@ -125,6 +128,8 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
     print("Worker started")
 
     while True:
+
+        torch.cuda.empty_cache()
 
         last_fits = True
 
@@ -195,11 +200,10 @@ def process_batch(jobs_batch, out_queue, model_related):
 
                 torch.cuda.reset_peak_memory_stats()
 
-                model_wrap_cfg = CFGDenoiser(model_related.model_wrap)
                 extra_args = {"cond": c, "uncond": uc, "cond_scale": scale}
 
                 samples_ddim = K.sampling.sample_lms(
-                    model_wrap_cfg,
+                    model_related.model_wrap_cfg,
                     x,
                     sigmas,
                     extra_args=extra_args,
