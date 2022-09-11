@@ -167,6 +167,7 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
 
 
 def process_batch(jobs_batch, out_queue, model_related):
+    global BASELINE_MEMORY_USAGE
 
     torch.cuda.empty_cache()
 
@@ -209,7 +210,7 @@ def process_batch(jobs_batch, out_queue, model_related):
                     extra_args=extra_args,
                 )
 
-                sampling_mem = torch.cuda.max_memory_allocated() / 10**9
+                sampling_mem = torch.cuda.max_memory_reserved() / 10**9
 
                 torch.cuda.reset_peak_memory_stats()
 
@@ -220,7 +221,7 @@ def process_batch(jobs_batch, out_queue, model_related):
                     (decoded_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0
                 )
 
-                decoding_mem = torch.cuda.max_memory_allocated() / 10**9
+                decoding_mem = torch.cuda.max_memory_reserved() / 10**9
 
                 print("!!!!!!!!!!!!!!!!!!!!!")
                 print(decoded_samples_ddim.shape)
