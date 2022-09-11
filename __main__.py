@@ -60,6 +60,9 @@ async def enqueue():
 
         job["status"] = "pending"
 
+        job["memory"] = [0, 0]
+        job["batch_size"] = 0
+
         GLOBAL_QUEUE.append(job)
 
     return "OK", 200
