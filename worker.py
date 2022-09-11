@@ -59,9 +59,12 @@ class CFGDenoiser(nn.Module):
 
 
 def batch_memory(batch_jobs):
-    A = 2.17218234
-    B = 2.500482 * 10**-7
-    C = 3.129452708 * 10**-11
+    # A = 2.17218234
+    # B = 2.500482 * 10**-7
+    # C = 3.129452708 * 10**-11
+    A = 2.18579638
+    B = 2.690453 * 10**-7
+    C = 4.68421053 * 10**-11
 
     batch_size = len(batch_jobs)
     width = batch_jobs[0]["parameters"]["width"]
