@@ -238,3 +238,10 @@ def process_batch(jobs_batch, out_queue, model_related):
                     }
 
                     out_queue.put(message)
+
+                del decoded_samples_ddim
+                del samples_ddim
+                del x
+                del c
+                del uc
+                del sigmas
