@@ -58,11 +58,47 @@ class CFGDenoiser(nn.Module):
         return uncond + (cond - uncond) * cond_scale
 
 
-def fits_in_batch(current_jobs, new_job):
-    if len(current_jobs) < 2:
-        return True
+def batch_memory(batch_jobs):
+    A = 2.17218234
+    B = 2.500482 * 10**-7
+    C = 3.129452708 * 10**-11
 
-    return False
+    batch_size = len(batch_jobs)
+    width = batch_jobs[0]["parameters"]["width"]
+    height = batch_jobs[0]["parameters"]["height"]
+    pixels = width * height
+
+    gb = A + batch_size * B * pixels + batch_size * C * pixels**2
+
+    return gb * 10**9
+
+
+def fits_in_batch(current_jobs, new_job):
+
+    if len(current_jobs) > 0:
+        # Ensure same width and height
+        can_width = current_jobs[0]["parameters"]["width"]
+        can_height = current_jobs[0]["parameters"]["height"]
+        new_width = new_job["parameters"]["width"]
+        new_height = new_job["parameters"]["height"]
+
+        if can_width != new_width or can_height != new_height:
+            return False
+
+        # Ensure same steps
+        can_steps = current_jobs[0]["parameters"]["steps"]
+        new_steps = new_job["parameters"]["steps"]
+
+        if can_steps != new_steps:
+            return False
+
+    hypothetical_batch = current_jobs + [new_job]
+
+    mem = batch_memory(hypothetical_batch)
+
+    available_mem, _ = torch.cuda.mem_get_info()
+
+    return mem < available_mem
 
 
 def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
