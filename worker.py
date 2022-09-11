@@ -95,6 +95,13 @@ def fits_in_batch(current_jobs, new_job):
         if can_steps != new_steps:
             return False
 
+        # Ensure same scale
+        can_scale = current_jobs[0]["parameters"]["scale"]
+        new_scale = new_job["parameters"]["scale"]
+
+        if can_scale != new_scale:
+            return False
+
     hypothetical_batch = current_jobs + [new_job]
 
     mem = batch_memory(hypothetical_batch)
