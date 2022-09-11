@@ -97,7 +97,7 @@ def fits_in_batch(current_jobs, new_job):
     mem = batch_memory(hypothetical_batch)
 
     _, available_mem = torch.cuda.mem_get_info()
-    available_mem = available_mem - 4 * 10**9
+    available_mem = available_mem - 8 * 10**9
 
     print(f"Batch memory: {mem/10**9} GB")
     print(f"Available memory: {available_mem/10**9} GB")
