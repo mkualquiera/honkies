@@ -86,8 +86,8 @@ def fits_in_batch(current_jobs, new_job):
             return False
 
         # Ensure same steps
-        can_steps = current_jobs[0]["parameters"]["steps"]
-        new_steps = new_job["parameters"]["steps"]
+        can_steps = current_jobs[0]["parameters"]["ddim_steps"]
+        new_steps = new_job["parameters"]["ddim_steps"]
 
         if can_steps != new_steps:
             return False
