@@ -66,7 +66,7 @@ def batch_memory(batch_jobs):
     batch_size = len(batch_jobs)
     width = batch_jobs[0]["parameters"]["width"]
     height = batch_jobs[0]["parameters"]["height"]
-    pixels = width * height
+    pixels = int(width) * int(height)
 
     gb = A + batch_size * B * pixels + batch_size * C * pixels**2
 
