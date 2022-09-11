@@ -151,6 +151,8 @@ def process_batch(jobs_batch, out_queue, model_related):
                     this_x = this_x * sigmas[0]
                     x = this_x if x is None else torch.cat([x, this_x], dim=0)
 
+                torch.cuda.reset_peak_memory_stats()
+
                 model_wrap_cfg = CFGDenoiser(model_related.model_wrap)
                 extra_args = {"cond": c, "uncond": uc, "cond_scale": scale}
 
@@ -161,12 +163,18 @@ def process_batch(jobs_batch, out_queue, model_related):
                     extra_args=extra_args,
                 )
 
+                sampling_mem = torch.cuda.max_memory_allocated() / 10**9
+
+                torch.cuda.reset_peak_memory_stats()
+
                 decoded_samples_ddim = model_related.model.decode_first_stage(
                     samples_ddim
                 )
                 decoded_samples_ddim = torch.clamp(
                     (decoded_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0
                 )
+
+                decoding_mem = torch.cuda.max_memory_allocated() / 10**9
 
                 print("!!!!!!!!!!!!!!!!!!!!!")
                 print(decoded_samples_ddim.shape)
@@ -183,6 +191,8 @@ def process_batch(jobs_batch, out_queue, model_related):
                         "id": jid,
                         "status": "complete",
                         "progress": 1.0,
+                        "memory": [sampling_mem, decoding_mem],
+                        "batch_size": batch_size,
                     }
 
                     out_queue.put(message)

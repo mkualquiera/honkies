@@ -146,11 +146,15 @@ async def looper():
                 job_id = message["id"]
                 progress = message["progress"]
                 status = message["status"]
+                memory = message["memory"]
+                batch_size = message["batch_size"]
 
                 for job in GLOBAL_QUEUE:
                     if job["id"] == job_id:
                         job["progress"] = progress
                         job["status"] = status
+                        job["memory"] = memory
+                        job["batch_size"] = batch_size
                         break
 
 
