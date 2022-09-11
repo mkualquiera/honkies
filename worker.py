@@ -163,6 +163,8 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
 
 def process_batch(jobs_batch, out_queue, model_related):
 
+    torch.cuda.empty_cache()
+
     with torch.no_grad():
         with model_related.model.ema_scope():
             with torch.cuda.amp.autocast():
