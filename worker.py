@@ -156,6 +156,17 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
             current_jobs_batch.append(job)
 
             if not last_fits:
+                if len(current_jobs_batch) == 1:
+                    print("Job too big for batch")
+                    message = {
+                        "id": job["id"],
+                        "status": "failed",
+                        "progress": 0.0,
+                        "memory": [0, 0],
+                        "batch_size": 0,
+                    }
+
+                    out_queue.put(message)
                 break
 
         if len(current_jobs_batch) > 0:

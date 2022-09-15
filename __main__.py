@@ -92,7 +92,7 @@ async def get(job_id):
 
     for job in GLOBAL_QUEUE:
         if job["id"] == job_id:
-            if job["status"] == "complete":
+            if job["status"] == "complete" or job["status"] == "failed":
                 GLOBAL_QUEUE.remove(job)
 
             return jsonify(job)
