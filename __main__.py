@@ -161,6 +161,14 @@ async def looper():
                         break
 
 
+@app.route("/api/v1/upload_image", methods=["POST"])
+async def upload_image():
+    file = await request.files["file"]
+    filename = file.filename
+    await file.save("./images/" + filename)
+    return "OK", 200
+
+
 def rebuild_worker(i):
     WORKER_PROCESSES[i] = None
 

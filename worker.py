@@ -136,6 +136,7 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
     current_jobs_batch = []
 
     print("Worker started")
+    # runpod/stable-diffusion:web-automatic
 
     while True:
 
@@ -197,6 +198,18 @@ def process_batch(jobs_batch, out_queue, model_related):
             with torch.cuda.amp.autocast():
                 prompts = [job["parameters"]["prompt"] for job in jobs_batch]
                 seeds = [job["parameters"]["seed"] for job in jobs_batch]
+                init_images = [
+                    job["parameters"]["init_image"]
+                    if "init_image" in job["parameters"]
+                    else None
+                    for job in jobs_batch
+                ]
+                croppings = [
+                    job["parameters"]["cropping"]
+                    if "cropping" in job["parameters"]
+                    else "center"
+                    for job in jobs_batch
+                ]
 
                 batch_size = len(prompts)
 
@@ -207,17 +220,39 @@ def process_batch(jobs_batch, out_queue, model_related):
 
                 ddim_steps = int(jobs_batch[0]["parameters"]["ddim_steps"])
                 scale = float(jobs_batch[0]["parameters"]["scale"])
+                denoising_strengths = [
+                    float(job["parameters"]["denoising_strength"])
+                    if "denoising_strength" in job["parameters"]
+                    else 1.0
+                    for job in jobs_batch
+                ]
+
+                t_enc_steps = int(denoising_strengths * ddim_steps)
 
                 uc = model_related.model.get_learned_conditioning(batch_size * [""])
                 c = model_related.model.get_learned_conditioning(prompts)
                 sigmas = model_related.model_wrap.get_sigmas(ddim_steps)
                 shape = [4, height // 8, width // 8]
 
+                sigmas = sigmas[ddim_steps - t_enc_steps :]
+
                 x = None
-                for seed in seeds:
+                for i, seed in enumerate(seeds):
+                    init_image = init_images[i]
+                    cropping = croppings[i]
                     seed_everything(seed)
-                    this_x = torch.randn([1, *shape], device="cuda")
-                    this_x = this_x * sigmas[0]
+
+                    if init_image is None:
+                        this_x = torch.zeros([1, *shape], device="cuda")
+                    else:
+                        this_x = latent_for_image(
+                            init_image, model_related, width, height, cropping
+                        )
+
+                    noise = torch.randn([1, *shape], device="cuda") * sigmas[0]
+
+                    this_x = this_x + noise
+
                     x = this_x if x is None else torch.cat([x, this_x], dim=0)
 
                 torch.cuda.reset_peak_memory_stats()
@@ -271,3 +306,79 @@ def process_batch(jobs_batch, out_queue, model_related):
                 del c
                 del uc
                 del sigmas
+
+
+def resize_image(im, width, height, resize_mode):
+    LANCZOS = (
+        Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
+    )
+    if resize_mode == "resize":
+        res = im.resize((width, height), resample=LANCZOS)
+    elif resize_mode == "center":
+        ratio = width / height
+        src_ratio = im.width / im.height
+
+        src_w = width if ratio > src_ratio else im.width * height // im.height
+        src_h = height if ratio <= src_ratio else im.height * width // im.width
+
+        resized = im.resize((src_w, src_h), resample=LANCZOS)
+        res = Image.new("RGBA", (width, height))
+        res.paste(resized, box=(width // 2 - src_w // 2, height // 2 - src_h // 2))
+    else:
+        ratio = width / height
+        src_ratio = im.width / im.height
+
+        src_w = width if ratio < src_ratio else im.width * height // im.height
+        src_h = height if ratio >= src_ratio else im.height * width // im.width
+
+        resized = im.resize((src_w, src_h), resample=LANCZOS)
+        res = Image.new("RGBA", (width, height))
+        res.paste(resized, box=(width // 2 - src_w // 2, height // 2 - src_h // 2))
+
+        if ratio < src_ratio:
+            fill_height = height // 2 - src_h // 2
+            res.paste(
+                resized.resize((width, fill_height), box=(0, 0, width, 0)), box=(0, 0)
+            )
+            res.paste(
+                resized.resize(
+                    (width, fill_height), box=(0, resized.height, width, resized.height)
+                ),
+                box=(0, fill_height + src_h),
+            )
+        elif ratio > src_ratio:
+            fill_width = width // 2 - src_w // 2
+            res.paste(
+                resized.resize((fill_width, height), box=(0, 0, 0, height)), box=(0, 0)
+            )
+            res.paste(
+                resized.resize(
+                    (fill_width, height), box=(resized.width, 0, resized.width, height)
+                ),
+                box=(fill_width + src_w, 0),
+            )
+
+    return res
+
+
+def latent_for_image(
+    image,
+    model_related,
+    width,
+    height,
+    cropping="center",
+):
+    path = f"./images/{image}"
+    image = Image.open(path)
+
+    image = resize_image(image, width, height, cropping)
+
+    image = np.array(image).astype(np.float32) / 255.0
+    image = image[None].transpose(0, 3, 1, 2)
+    image = torch.from_numpy(image).to("cuda")
+
+    latent = model_related.model.get_fist_stage_encoding(
+        model_related.model.encode_first_stage(image)
+    )
+
+    return latent
