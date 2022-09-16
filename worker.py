@@ -377,7 +377,7 @@ def latent_for_image(
 
     image = image.convert("RGB")
 
-    image = np.array(image).astype(np.float32) / 255.0
+    image = (np.array(image).astype(np.float32) / 255.0) * 2.0 - 1.0
     image = image[None].transpose(0, 3, 1, 2)
     image = torch.from_numpy(image).to("cuda")
 
