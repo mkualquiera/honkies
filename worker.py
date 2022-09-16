@@ -134,6 +134,7 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
     )
 
     print(model.__dict__.keys())
+    exit()
 
     current_jobs_batch = []
 
