@@ -163,7 +163,8 @@ async def looper():
 
 @app.route("/api/v1/up_image", methods=["POST"])
 async def upload_image():
-    file = await request.files["file"]
+    files = await request.files
+    file = files["file"]
     filename = file.filename
     await file.save("./images/" + filename)
     return "OK", 200
