@@ -133,9 +133,6 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
         model_wrap_cfg=model_wrap_cfg,
     )
 
-    print(model.__dict__.keys())
-    exit()
-
     current_jobs_batch = []
 
     print("Worker started")
@@ -380,7 +377,7 @@ def latent_for_image(
     image = image[None].transpose(0, 3, 1, 2)
     image = torch.from_numpy(image).to("cuda")
 
-    latent = model_related.model.get_fist_stage_encoding(
+    latent = model_related.model.get_first_stage_encoding(
         model_related.model.encode_first_stage(image)
     )
 
