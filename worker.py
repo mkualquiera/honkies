@@ -102,6 +102,13 @@ def fits_in_batch(current_jobs, new_job):
         if can_scale != new_scale:
             return False
 
+        # Ensure denoising strength is the same
+        can_denoise = current_jobs[0]["parameters"]["denoising_strength"]
+        new_denoise = new_job["parameters"]["denoising_strength"]
+
+        if can_denoise != new_denoise:
+            return False
+
     hypothetical_batch = current_jobs + [new_job]
 
     mem = batch_memory(hypothetical_batch)
