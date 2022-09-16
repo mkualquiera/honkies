@@ -117,7 +117,7 @@ async def get_result(job_id):
     return resp
 
 
-@app.route("/api/v1/up_image", methods=["POST"])
+@app.route("/api/v1/up_image", methods=["GET"])
 async def upload_image():
 
     args = request.args
