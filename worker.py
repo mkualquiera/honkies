@@ -227,7 +227,7 @@ def process_batch(jobs_batch, out_queue, model_related):
                     for job in jobs_batch
                 ]
 
-                t_enc_steps = int(denoising_strengths * ddim_steps)
+                t_enc_steps = int(denoising_strengths[0] * ddim_steps)
 
                 uc = model_related.model.get_learned_conditioning(batch_size * [""])
                 c = model_related.model.get_learned_conditioning(prompts)
