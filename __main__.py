@@ -1,3 +1,4 @@
+import base64
 from pickle import NONE
 import torch.multiprocessing as multiprocessing
 from quart import Quart, request, jsonify, send_file
@@ -116,6 +117,25 @@ async def get_result(job_id):
     return resp
 
 
+@app.route("/api/v1/up_image", methods=["POST"])
+async def upload_image():
+
+    args = request.args
+
+    filename = args["filename"]
+    content_type = args["content_type"]
+    data = args["data"]
+
+    # Base64 decode the data
+    data = base64.b64decode(data)
+
+    # Save the file
+    with open("./images/" + filename, "wb") as f:
+        f.write(data)
+
+    return "OK", 200
+
+
 async def looper():
 
     print("Starting loop...")
@@ -159,14 +179,6 @@ async def looper():
                         job["memory"] = memory
                         job["batch_size"] = batch_size
                         break
-
-
-@app.route("/api/v1/up_image", methods=["POST"])
-async def upload_image():
-    file = await request.files["file"]
-    filename = file.filename
-    await file.save("./images/" + filename)
-    return "OK", 200
 
 
 def rebuild_worker(i):
