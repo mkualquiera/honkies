@@ -133,7 +133,7 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
         model_wrap_cfg=model_wrap_cfg,
     )
 
-    print(model.__dict__)
+    print(model.__dict__.keys())
 
     current_jobs_batch = []
 
