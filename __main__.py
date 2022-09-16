@@ -161,7 +161,7 @@ async def looper():
                         break
 
 
-@app.route("/api/v1/upload_image", methods=["POST"])
+@app.route("/api/v1/up_image", methods=["POST"])
 async def upload_image():
     file = await request.files["file"]
     filename = file.filename
@@ -216,6 +216,10 @@ if __name__ == "__main__":
     # create results directory if it doesn't exist
     if not os.path.exists("./results"):
         os.makedirs("./results")
+
+    # create images directory if it doesn't exist
+    if not os.path.exists("./images"):
+        os.makedirs("./images")
 
     for i in range(num_devices):
         p = multiprocessing.Process(target=worker, args=(OUT_QUEUES[i], IN_QUEUES[i]))
