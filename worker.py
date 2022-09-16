@@ -371,7 +371,11 @@ def latent_for_image(
     path = f"./images/{image}"
     image = Image.open(path)
 
+    image = image.convert("RGB")
+
     image = resize_image(image, width, height, cropping)
+
+    image = image.convert("RGB")
 
     image = np.array(image).astype(np.float32) / 255.0
     image = image[None].transpose(0, 3, 1, 2)
