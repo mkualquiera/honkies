@@ -69,7 +69,7 @@ class CFGMaskedDenoiser(nn.Module):
 
         x0noised = x0 + noise * sigma
 
-        x = x * mask + x0noised * mask_inv
+        x = x * mask_inv + x0noised * mask
 
         x_in = torch.cat([x] * 2)
         sigma_in = torch.cat([sigma] * 2)
@@ -179,7 +179,7 @@ def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
     print("Loading model wrap")
     model_wrap = K.external.CompVisDenoiser(model)
 
-    model_wrap_cfg = CFGDenoiser(model_wrap)
+    model_wrap_cfg = CFGMaskedDenoiser(model_wrap)
 
     model_related = SimpleNamespace(
         model=model,
@@ -291,9 +291,11 @@ def process_batch(jobs_batch, out_queue, model_related):
 
                 sigmas = sigmas[ddim_steps - t_enc_steps :]
 
+                x0s = None
                 x = None
                 noises = None
                 sampling_noises = None
+                masks = None
                 for i, seed in enumerate(seeds):
                     init_image = init_images[i]
                     cropping = croppings[i]
@@ -307,10 +309,13 @@ def process_batch(jobs_batch, out_queue, model_related):
 
                     if init_image is None:
                         this_x = torch.zeros([1, *shape], device="cuda")
+                        mask = torch.zeros([1, *shape], device="cuda")
                     else:
-                        this_x = latent_for_image(
+                        this_x, mask = latent_for_image(
                             init_image, model_related, width, height, cropping
                         )
+
+                    x0s = this_x if x0s is None else torch.cat([x0s, this_x], dim=0)
 
                     this_x = this_x + noise * sigmas[0]
 
@@ -327,11 +332,20 @@ def process_batch(jobs_batch, out_queue, model_related):
                                 [sampling_noises[j], this_sampling_noises[j]], dim=0
                             )
 
+                    masks = mask if masks is None else torch.cat([masks, mask], dim=0)
+
                 torch.cuda.reset_peak_memory_stats()
 
                 seed_everything(0)
 
-                extra_args = {"cond": c, "uncond": uc, "cond_scale": scale}
+                extra_args = {
+                    "cond": c,
+                    "uncond": uc,
+                    "cond_scale": scale,
+                    "mask": masks,
+                    "noise": noises,
+                    "x0": x0s,
+                }
 
                 samples_ddim = sample_euler_ancestral(
                     model_related.model_wrap_cfg,
@@ -446,13 +460,11 @@ def latent_for_image(
     path = f"./images/{image}"
     image = Image.open(path)
 
-    image = image.convert("RGB")
-
     image = resize_image(image, width, height, cropping)
 
-    image = image.convert("RGB")
+    imagea = image.convert("RGBA")
 
-    image = (np.array(image).astype(np.float32) / 255.0) * 2.0 - 1.0
+    image = (np.array(image.convert("RGB")).astype(np.float32) / 255.0) * 2.0 - 1.0
     image = image[None].transpose(0, 3, 1, 2)
     image = torch.from_numpy(image).to("cuda")
 
@@ -460,4 +472,17 @@ def latent_for_image(
         model_related.model.encode_first_stage(image)
     )
 
-    return latent
+    # downscale imageo by 1/8
+    imagea = imagea.resize(
+        (imagea.width // 8, imagea.height // 8), resample=Image.LANCZOS
+    )
+
+    # convert to numpy array
+
+    imagea = np.array(imagea.convert("RGBA")).astype(np.float32) / 255.0
+    imagea = imagea[None].transpose(0, 3, 1, 2)
+    imagea = torch.from_numpy(image).to("cuda")
+
+    mask = imagea[:, 3, :, :]
+
+    return latent, mask
