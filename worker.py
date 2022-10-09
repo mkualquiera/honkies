@@ -270,14 +270,14 @@ def process_batch(jobs_batch, out_queue, model_related):
                     cropping = croppings[i]
                     seed_everything(seed)
 
+                    noise = torch.randn([1, *shape], device="cuda")
+
                     if init_image is None:
                         this_x = torch.zeros([1, *shape], device="cuda")
                     else:
                         this_x = latent_for_image(
                             init_image, model_related, width, height, cropping
                         )
-
-                    noise = torch.randn([1, *shape], device="cuda")
 
                     this_x = this_x + noise * sigmas[0]
 
@@ -287,6 +287,8 @@ def process_batch(jobs_batch, out_queue, model_related):
                     )
 
                 torch.cuda.reset_peak_memory_stats()
+
+                seed_everything(0)
 
                 extra_args = {"cond": c, "uncond": uc, "cond_scale": scale}
 
