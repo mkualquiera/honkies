@@ -142,6 +142,34 @@ def fits_in_batch(current_jobs, new_job):
     return mem < available_mem
 
 
+@torch.no_grad()
+def sample_euler_ancestral(
+    model, x, sigmas, noises, extra_args=None, callback=None, disable=None
+):
+    """Ancestral sampling with Euler method steps."""
+    extra_args = {} if extra_args is None else extra_args
+    s_in = x.new_ones([x.shape[0]])
+    for i in trange(len(sigmas) - 1, disable=disable):
+        denoised = model(x, sigmas[i] * s_in, **extra_args)
+        sigma_down, sigma_up = K.sampling.get_ancestral_step(sigmas[i], sigmas[i + 1])
+        if callback is not None:
+            callback(
+                {
+                    "x": x,
+                    "i": i,
+                    "sigma": sigmas[i],
+                    "sigma_hat": sigmas[i],
+                    "denoised": denoised,
+                }
+            )
+        d = K.sampling.to_d(x, sigmas[i], denoised)
+        # Euler method
+        dt = sigma_down - sigmas[i]
+        x = x + d * dt
+        x = x + noises[i] * sigma_up
+    return x
+
+
 def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
 
     print("Loading config")
@@ -265,12 +293,17 @@ def process_batch(jobs_batch, out_queue, model_related):
 
                 x = None
                 noises = None
+                sampling_noises = None
                 for i, seed in enumerate(seeds):
                     init_image = init_images[i]
                     cropping = croppings[i]
                     seed_everything(seed)
 
                     noise = torch.randn([1, *shape], device="cuda")
+
+                    this_sampling_noises = [
+                        torch.randn([1, *shape], device="cuda") for _ in sigmas
+                    ]
 
                     if init_image is None:
                         this_x = torch.zeros([1, *shape], device="cuda")
@@ -286,16 +319,25 @@ def process_batch(jobs_batch, out_queue, model_related):
                         noise if noises is None else torch.cat([noises, noise], dim=0)
                     )
 
+                    if sampling_noises is None:
+                        sampling_noises = this_sampling_noises
+                    else:
+                        for j in range(len(sampling_noises)):
+                            sampling_noises[j] = torch.cat(
+                                [sampling_noises[j], this_sampling_noises[j]], dim=0
+                            )
+
                 torch.cuda.reset_peak_memory_stats()
 
                 seed_everything(0)
 
                 extra_args = {"cond": c, "uncond": uc, "cond_scale": scale}
 
-                samples_ddim = K.sampling.sample_euler_ancestral(
+                samples_ddim = sample_euler_ancestral(
                     model_related.model_wrap_cfg,
                     x,
                     sigmas,
+                    sampling_noises,
                     extra_args=extra_args,
                 )
 
