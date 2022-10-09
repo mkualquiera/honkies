@@ -58,6 +58,26 @@ class CFGDenoiser(nn.Module):
         return uncond + (cond - uncond) * cond_scale
 
 
+class CFGMaskedDenoiser(nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.inner_model = model
+
+    def forward(self, x, sigma, uncond, cond, cond_scale, mask, noise, x0):
+
+        mask_inv = 1.0 - mask
+
+        x0noised = x0 + noise * sigma
+
+        x = x * mask + x0noised * mask_inv
+
+        x_in = torch.cat([x] * 2)
+        sigma_in = torch.cat([sigma] * 2)
+        cond_in = torch.cat([uncond, cond])
+        uncond, cond = self.inner_model(x_in, sigma_in, cond=cond_in).chunk(2)
+        return uncond + (cond - uncond) * cond_scale
+
+
 def batch_memory(batch_jobs):
     # A = 2.17218234
     # B = 2.500482 * 10**-7
@@ -244,6 +264,7 @@ def process_batch(jobs_batch, out_queue, model_related):
                 sigmas = sigmas[ddim_steps - t_enc_steps :]
 
                 x = None
+                noises = None
                 for i, seed in enumerate(seeds):
                     init_image = init_images[i]
                     cropping = croppings[i]
@@ -256,17 +277,20 @@ def process_batch(jobs_batch, out_queue, model_related):
                             init_image, model_related, width, height, cropping
                         )
 
-                    noise = torch.randn([1, *shape], device="cuda") * sigmas[0]
+                    noise = torch.randn([1, *shape], device="cuda")
 
-                    this_x = this_x + noise
+                    this_x = this_x + noise * sigmas[0]
 
                     x = this_x if x is None else torch.cat([x, this_x], dim=0)
+                    noises = (
+                        noise if noises is None else torch.cat([noises, noise], dim=0)
+                    )
 
                 torch.cuda.reset_peak_memory_stats()
 
                 extra_args = {"cond": c, "uncond": uc, "cond_scale": scale}
 
-                samples_ddim = K.sampling.sample_lms(
+                samples_ddim = K.sampling.sample_euler_ancestral(
                     model_related.model_wrap_cfg,
                     x,
                     sigmas,
