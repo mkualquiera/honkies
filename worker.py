@@ -481,7 +481,7 @@ def latent_for_image(
 
     imagea = np.array(imagea.convert("RGBA")).astype(np.float32) / 255.0
     imagea = imagea[None].transpose(0, 3, 1, 2)
-    imagea = torch.from_numpy(image).to("cuda")
+    imagea = torch.from_numpy(imagea).to("cuda")
 
     mask = imagea[:, 3, :, :]
 
