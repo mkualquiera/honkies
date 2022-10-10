@@ -76,6 +76,8 @@ class CFGMaskedDenoiser(nn.Module):
         print("x0noised", x0noised.shape)
         print("mask", mask.shape)
         print("mask_inv", mask_inv.shape)
+        print("minmask", mask.min())
+        print("maxmask", mask.max())
 
         x = x * mask_inv + x0noised * mask
 
