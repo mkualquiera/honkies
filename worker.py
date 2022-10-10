@@ -357,14 +357,14 @@ def process_batch(jobs_batch, out_queue, model_related):
                     "x0": x0s,
                 }
 
-                samples_ddim = sample_euler_ancestral(
-                    model_related.model_wrap_cfg,
-                    x,
-                    sigmas,
-                    sampling_noises,
-                    extra_args=extra_args,
-                )
-                # samples_ddim = x
+                # samples_ddim = sample_euler_ancestral(
+                #    model_related.model_wrap_cfg,
+                #    x,
+                #    sigmas,
+                #    sampling_noises,
+                #    extra_args=extra_args,
+                # )
+                samples_ddim = x
 
                 sampling_mem = torch.cuda.max_memory_reserved() / 10**9
 
