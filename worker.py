@@ -71,6 +71,8 @@ class CFGMaskedDenoiser(nn.Module):
 
         scaled_noise = torch.einsum("bchw,b->bchw", noise, sigma)
 
+        print(scaled_noise.shape)
+
         x0noised = x0 + scaled_noise
 
         x = x * mask_inv + x0noised * mask
