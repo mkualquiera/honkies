@@ -67,7 +67,9 @@ class CFGMaskedDenoiser(nn.Module):
 
         mask_inv = 1.0 - mask
 
-        x0noised = x0 + noise * sigma
+        scaled_noise = np.einsum("bchw,b->bchw", noise, sigma)
+
+        x0noised = x0 + scaled_noise
 
         x = x * mask_inv + x0noised * mask
 
