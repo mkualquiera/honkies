@@ -491,6 +491,7 @@ def latent_for_image(
     imagea = imagea[None].transpose(0, 3, 1, 2)
     imagea = torch.from_numpy(imagea).to("cuda")
 
-    mask = imagea[:, 3, :, :]
+    # Take only the alpha channel but preserve the dimensions
+    mask = imagea[:, 3:4, :, :]
 
     return latent, mask
