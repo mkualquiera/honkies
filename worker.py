@@ -475,9 +475,12 @@ def latent_for_image(
 
     imagea = image.convert("RGBA")
 
-    image = (np.array(image.convert("RGB")).astype(np.float32) / 255.0) * 2.0 - 1.0
+    image = (np.array(image).astype(np.float32) / 255.0) * 2.0 - 1.0
     image = image[None].transpose(0, 3, 1, 2)
     image = torch.from_numpy(image).to("cuda")
+
+    # Take only rgb channels
+    image = image[:, 0:3, :, :]
 
     latent = model_related.model.get_first_stage_encoding(
         model_related.model.encode_first_stage(image)
@@ -490,7 +493,7 @@ def latent_for_image(
 
     # convert to numpy array
 
-    imagea = np.array(imagea.convert("RGBA")).astype(np.float32) / 255.0
+    imagea = np.array(imagea).astype(np.float32) / 255.0
     imagea = imagea[None].transpose(0, 3, 1, 2)
     imagea = torch.from_numpy(imagea).to("cuda")
 
