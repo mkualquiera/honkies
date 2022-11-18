@@ -269,6 +269,10 @@ def process_batch(jobs_batch, out_queue, model_related):
                     else None
                     for job in jobs_batch
                 ]
+                masks_images = [
+                    job["parameters"]["mask"] if "mask" in job["parameters"] else None
+                    for job in jobs_batch
+                ]
                 croppings = [
                     job["parameters"]["cropping"]
                     if "cropping" in job["parameters"]
@@ -308,6 +312,7 @@ def process_batch(jobs_batch, out_queue, model_related):
                 masks = None
                 for i, seed in enumerate(seeds):
                     init_image = init_images[i]
+                    mask_image = masks_images[i]
                     cropping = croppings[i]
                     seed_everything(seed)
 
@@ -322,7 +327,12 @@ def process_batch(jobs_batch, out_queue, model_related):
                         mask = torch.zeros([1, *shape], device="cuda")
                     else:
                         this_x, mask = latent_for_image(
-                            init_image, model_related, width, height, cropping
+                            init_image,
+                            mask_image,
+                            model_related,
+                            width,
+                            height,
+                            cropping,
                         )
 
                     x0s = this_x if x0s is None else torch.cat([x0s, this_x], dim=0)
@@ -463,6 +473,7 @@ def resize_image(im, width, height, resize_mode):
 
 def latent_for_image(
     image,
+    mask_image,
     model_related,
     width,
     height,
@@ -499,5 +510,26 @@ def latent_for_image(
 
     # Take only the alpha channel but preserve the dimensions
     mask = imagea[:, 3:4, :, :]
+
+    if mask_image is None:
+        mask = torch.zeros_like(mask)
+    else:
+        path_mask = f"./images/{mask_image}"
+        mask_image = Image.open(path_mask)
+
+        mask_image = resize_image(mask_image, width, height, cropping)
+
+        mask_image = mask_image.convert("L")
+
+        # Downscale mask by 1/8
+        mask_image = mask_image.resize(
+            (mask_image.width // 8, mask_image.height // 8), resample=Image.LANCZOS
+        )
+
+        mask_image = (np.array(mask_image).astype(np.float32) / 255.0) * 2.0 - 1.0
+        mask_image = mask_image[None].transpose(0, 3, 1, 2)
+        mask_image = torch.from_numpy(mask_image).to("cuda")
+
+        mask = mask_image[:, 0:1, :, :]
 
     return latent, mask
