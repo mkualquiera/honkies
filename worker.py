@@ -175,7 +175,7 @@ def sample_euler_ancestral(
 def worker(in_queue: multiprocessing.Queue, out_queue: multiprocessing.Queue):
 
     print("Loading config")
-    config = OmegaConf.load("/workspace/k-diffusion/v1-inference.yaml")
+    config = OmegaConf.load("/workspace/honkies-worker/v1-inference.yaml")
     print("Loading model")
     model = load_model_from_config(config, "/weights/sd.ckpt")
     print("Loading model wrap")
