@@ -71,14 +71,6 @@ class CFGMaskedDenoiser(nn.Module):
 
         x0noised = x0 + scaled_noise
 
-        print("x", x.shape)
-        print("x0", x0.shape)
-        print("x0noised", x0noised.shape)
-        print("mask", mask.shape)
-        print("mask_inv", mask_inv.shape)
-        print("minmask", mask.min())
-        print("maxmask", mask.max())
-
         x = x * mask_inv + x0noised * mask
 
         x_in = torch.cat([x] * 2)
@@ -512,7 +504,8 @@ def latent_for_image(
     mask = imagea[:, 3:4, :, :]
 
     if mask_image is None:
-        mask = torch.ones_like(mask)
+        mask = torch.ones_like(mask) * 0
+        print("No mask image provided, using a blank mask")
     else:
         path_mask = f"./images/{mask_image}"
         mask_image = Image.open(path_mask)
@@ -526,10 +519,11 @@ def latent_for_image(
             (mask_image.width // 8, mask_image.height // 8), resample=Image.LANCZOS
         )
 
-        mask_image = (np.array(mask_image).astype(np.float32) / 255.0) * 2.0 - 1.0
+        mask_image = np.array(mask_image).astype(np.float32) / 255.0
         mask_image = mask_image[None].transpose(0, 3, 1, 2)
         mask_image = torch.from_numpy(mask_image).to("cuda")
 
         mask = mask_image[:, 0:1, :, :]
+        print("Mask image provided, using it")
 
     return latent, mask
