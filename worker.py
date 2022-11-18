@@ -520,7 +520,7 @@ def latent_for_image(
         )
 
         mask_image = np.array(mask_image).astype(np.float32) / 255.0
-        mask_image = mask_image[None].transpose(0, 3, 1, 2)
+        mask_image = mask_image[None, :, :, None].transpose(0, 3, 1, 2)
         mask_image = torch.from_numpy(mask_image).to("cuda")
 
         mask = mask_image[:, 0:1, :, :]
