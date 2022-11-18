@@ -512,7 +512,7 @@ def latent_for_image(
     mask = imagea[:, 3:4, :, :]
 
     if mask_image is None:
-        mask = torch.zeros_like(mask)
+        mask = torch.ones_like(mask)
     else:
         path_mask = f"./images/{mask_image}"
         mask_image = Image.open(path_mask)
